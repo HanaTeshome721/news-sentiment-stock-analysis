@@ -5,6 +5,7 @@ import seaborn as sns
 
 from sklearn.feature_extraction.text import CountVectorizer
 
+# Descriptive Statistics
 def headline_length_stats(df):
     df['headline_length'] = df['headline'].apply(len)
     print(df['headline_length'].describe())
@@ -21,18 +22,45 @@ def articles_per_publisher(df):
     plt.show()
 
 def publication_date_trends(df):
-    df['date_only'] = pd.to_datetime(df['date']).dt.date
-    daily_counts = df.groupby('date_only').size()
-    daily_counts.plot(figsize=(12, 6))
-    plt.title('Articles Published Over Time')
+    # Mixed format parsing
+    df['datetime_parsed'] = pd.to_datetime(df['date'], format='mixed', errors='coerce', utc=True)
+
+    # Drop rows with bad dates
+    df_clean = df.dropna(subset=['datetime_parsed'])
+
+    # Extract just the date part
+    df_clean['date_only'] = df_clean['datetime_parsed'].dt.date
+
+    # Group and plot
+    daily_counts = df_clean.groupby('date_only').size()
+    daily_counts.plot(figsize=(12, 6), title='Articles per Day')
     plt.ylabel('Number of Articles')
     plt.show()
 
 
 
+#  Text Analysis (Topic Modeling)
+def top_keywords(df, num_keywords=20):
+    vectorizer = CountVectorizer(stop_words='english', max_features=num_keywords)
+    X = vectorizer.fit_transform(df['headline'])
+    keywords = vectorizer.get_feature_names_out()
+    counts = X.toarray().sum(axis=0)
+    keyword_freq = pd.Series(counts, index=keywords).sort_values(ascending=False)
+    print(keyword_freq)
+    keyword_freq.plot(kind='bar')
+    plt.title(f'Top {num_keywords} Keywords in Headlines')
+    plt.show()
+
+
+
+# Time Series Analysis
 def publication_hour_analysis(df):
-    df['hour'] = pd.to_datetime(df['date']).dt.hour
-    hourly_counts = df['hour'].value_counts().sort_index()
+    df['datetime_parsed'] = pd.to_datetime(df['date'], utc=True, errors='coerce')
+    df_clean = df.dropna(subset=['datetime_parsed'])
+
+    df_clean['hour'] = df_clean['datetime_parsed'].dt.hour
+
+    hourly_counts = df_clean['hour'].value_counts().sort_index()
     hourly_counts.plot(kind='bar')
     plt.title('Articles Published by Hour of Day')
     plt.xlabel('Hour')
@@ -41,6 +69,7 @@ def publication_hour_analysis(df):
 
 
 
+#  Publisher Domain Analysis
 def publisher_domain_analysis(df):
     if df['publisher'].str.contains('@').any():
         df['domain'] = df['publisher'].str.extract(r'@([\w\.-]+)')
@@ -51,5 +80,6 @@ def publisher_domain_analysis(df):
         plt.show()
     else:
         print("No email-format publishers found.")
+
 
 
