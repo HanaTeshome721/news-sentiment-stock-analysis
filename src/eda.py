@@ -22,19 +22,21 @@ def articles_per_publisher(df):
     plt.show()
 
 def publication_date_trends(df):
-    # Auto-parse, keeping timezone-safe datetimes
-    df['datetime_parsed'] = pd.to_datetime(df['date'], utc=True, errors='coerce')
+    # Mixed format parsing
+    df['datetime_parsed'] = pd.to_datetime(df['date'], format='mixed', errors='coerce', utc=True)
 
-    # Drop rows that failed parsing
+    # Drop rows with bad dates
     df_clean = df.dropna(subset=['datetime_parsed'])
 
-    # Extract date only
+    # Extract just the date part
     df_clean['date_only'] = df_clean['datetime_parsed'].dt.date
 
+    # Group and plot
     daily_counts = df_clean.groupby('date_only').size()
     daily_counts.plot(figsize=(12, 6), title='Articles per Day')
     plt.ylabel('Number of Articles')
     plt.show()
+
 
 
 #  Text Analysis (Topic Modeling)
