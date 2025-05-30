@@ -21,12 +21,16 @@ def articles_per_publisher(df):
     plt.show()
 
 def publication_date_trends(df):
-    df['date_only'] = pd.to_datetime(df['date']).dt.date
-    daily_counts = df.groupby('date_only').size()
-    daily_counts.plot(figsize=(12, 6))
-    plt.title('Articles Published Over Time')
-    plt.ylabel('Number of Articles')
-    plt.show()
+    # Explicit parsing, fallback on errors
+    df['date_only'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S', errors='coerce').dt.date
+
+    # Drop bad parses
+    df_clean = df.dropna(subset=['date_only'])
+
+    daily_counts = df_clean.groupby('date_only').size()
+    daily_counts.plot(figsize=(12, 6), title='Articles per Day')
+
+
 
 
 
